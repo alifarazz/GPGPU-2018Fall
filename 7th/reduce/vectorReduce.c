@@ -6,7 +6,6 @@ int result_parallel;
 void *parallel_vector_reduce(void *args) {
   argument targs = *(argument *)args;
 
-  int ret_val = targs.ret_val;
   int *a = targs.a;
   int accu = 0;
 
@@ -21,7 +20,7 @@ void *parallel_vector_reduce(void *args) {
   while (si < ei)
     accu += a[si++];
 
-  ret_val = accu;
+  targs.ret_val = accu;
   pthread_exit(NULL);
 }
 
