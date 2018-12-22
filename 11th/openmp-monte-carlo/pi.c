@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 #ifndef _HISTOGRAM_H
 #define _HISTOGRAM_H
 #include "pi.h"
