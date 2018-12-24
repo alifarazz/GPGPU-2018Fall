@@ -8,19 +8,21 @@ vector_operation_kernel_coalesced(int* output, int* data, int size)
     output[tid] = OPERATION_I(data[tid]);
 }
 
-__global__ void vector_operation_kernel(int *output, int *data, int size, int work_per_thread){
-	
-	int tid = threadIdx.x + blockIdx.x * blockDim.x;
+__global__ void
+vector_operation_kernel(int* output, int* data, int size, int work_per_thread)
+{
 
-	int si = tid * work_per_thread;
-	int ei = si + work_per_thread;
-	if (ei > size){
-		ei = size;
-	}
-	
-	for(tid = si; tid < ei; tid++){
-		output[tid] = OPERATION(data[tid]);
-	}
+  int tid = threadIdx.x + blockIdx.x * blockDim.x;
+
+  int si = tid * work_per_thread;
+  int ei = si + work_per_thread;
+  if (ei > size) {
+    ei = size;
+  }
+
+  for (tid = si; tid < ei; tid++) {
+    output[tid] = OPERATION(data[tid]);
+  }
 }
 
 void
