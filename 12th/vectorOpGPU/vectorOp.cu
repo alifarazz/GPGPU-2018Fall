@@ -1,11 +1,26 @@
 #include "vectorOp.h"
 
 __global__ void
-vector_operation_kernel(int* output, int* data, int size)
+vector_operation_kernel_coalesced(int* output, int* data, int size)
 {
   for (uint tid = blockDim.x * blockIdx.x + threadIdx.x; tid < size;
        tid += blockIdx.x * gridDim.x)
     output[tid] = OPERATION_I(data[tid]);
+}
+
+__global__ void vector_operation_kernel(int *output, int *data, int size, int work_per_thread){
+	
+	int tid = threadIdx.x + blockIdx.x * blockDim.x;
+
+	int si = tid * work_per_thread;
+	int ei = si + work_per_thread;
+	if (ei > size){
+		ei = size;
+	}
+	
+	for(tid = si; tid < ei; tid++){
+		output[tid] = OPERATION(data[tid]);
+	}
 }
 
 void
@@ -68,7 +83,7 @@ main(int argc, char* argv[])
     // vector_operation_kernel<<<grid_dime, block_dime>>>(
     // output_d, data_d, work_per_thrd, data_size);
 
-    vector_operation_kernel<<<grid_dime, block_dime>>>(
+    vector_operation_kernel_coalesced<<<grid_dime, block_dime>>>(
       output_d, data_d, data_size);
 
     // Wait for the GPU launched work to complete
