@@ -1,8 +1,6 @@
 #include "vectorOp.h"
 
-__global__ void
-vector_operation_kernel(int* output, int* data, int size)
-{
+__global__ void vector_operation_kernel(int *output, int *data, int size) {
 
   int tid = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -11,9 +9,7 @@ vector_operation_kernel(int* output, int* data, int size)
   }
 }
 
-void
-sequential_vector_operation(int* output, int* data, int size)
-{
+void sequential_vector_operation(int *output, int *data, int size) {
 
   for (int i = 0; i < size; i++) {
     output[i] = OPERATION(data[i]);
@@ -21,9 +17,7 @@ sequential_vector_operation(int* output, int* data, int size)
   return;
 }
 
-int
-main(int argc, char* argv[])
-{
+int main(int argc, char *argv[]) {
 
   double elapsed_time;
   int block_size, grid_size;
@@ -45,9 +39,10 @@ main(int argc, char* argv[])
   stream_count = atoi(argv[3]);
   // work_per_thread = atoi(argv[4]);
 
-  cudaStream_t streams[stream_count];
+  cudaStream_t *streams =
+      (cudaStream_t *)malloc(sizeof(cudaStream_t) * STREAM_NUMBERS);
 
-  for (int i = 0; i < stream_count; i++) {
+  for (int i = 0; i < STREAM_NUMBERS; i++) {
     cudaStreamCreate(&streams[i]);
   }
 
@@ -59,8 +54,8 @@ main(int argc, char* argv[])
   initialize_data_zero_cudaMallocHost(&device_output_h, data_size);
 
   // Initialize data on Device
-  CUDA_CHECK_RETURN(cudaMalloc((void**)&data_d, sizeof(int) * data_size));
-  CUDA_CHECK_RETURN(cudaMalloc((void**)&output_d, sizeof(int) * data_size));
+  CUDA_CHECK_RETURN(cudaMalloc((void **)&data_d, sizeof(int) * data_size));
+  CUDA_CHECK_RETURN(cudaMalloc((void **)&output_d, sizeof(int) * data_size));
 
   // Sequential vector operation
   set_clock();
@@ -84,25 +79,20 @@ main(int argc, char* argv[])
 
   for (int i = 0; i < stream_count; i++) {
 
-    cudaMemcpyAsync(&data_d[offset],
-                    &data_h[offset],
-                    stream_bytes,
-                    cudaMemcpyHostToDevice,
-                    streams[i]);
+    cudaMemcpyAsync(&data_d[offset], &data_h[offset], stream_bytes,
+                    cudaMemcpyHostToDevice, streams[i % STREAM_NUMBERS]);
 
-    vector_operation_kernel<<<grid_dime, block_dime, 0, streams[i]>>>(
-      &output_d[offset], &data_d[offset], stream_size);
+    vector_operation_kernel<<<grid_dime, block_dime, 0,
+                              streams[i % STREAM_NUMBERS]>>>(
+        &output_d[offset], &data_d[offset], stream_size);
 
-    cudaMemcpyAsync(&device_output_h[offset],
-                    &output_d[offset],
-                    stream_bytes,
-                    cudaMemcpyDeviceToHost,
-                    streams[i]);
+    cudaMemcpyAsync(&device_output_h[offset], &output_d[offset], stream_bytes,
+                    cudaMemcpyDeviceToHost, streams[i % STREAM_NUMBERS]);
     offset += stream_size;
   }
 
   CUDA_CHECK_RETURN(
-    cudaDeviceSynchronize()); // Wait for the GPU launched work to complete
+      cudaDeviceSynchronize()); // Wait for the GPU launched work to complete
   CUDA_CHECK_RETURN(cudaGetLastError());
 
   elapsed_time = get_elapsed_time();
@@ -113,12 +103,13 @@ main(int argc, char* argv[])
   validate(output_h, device_output_h, data_size);
 #endif
 
-  for (int i = 0; i < stream_count; i++) {
+  for (int i = 0; i < STREAM_NUMBERS; i++) {
     cudaStreamDestroy(streams[i]);
   }
   // free(data_h);
   CUDA_CHECK_RETURN(cudaFreeHost(data_h));
   free(output_h);
+  free(streams);
   // free(device_output_h);
   CUDA_CHECK_RETURN(cudaFreeHost(device_output_h));
 

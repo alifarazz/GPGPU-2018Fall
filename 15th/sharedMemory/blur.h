@@ -1,5 +1,5 @@
-#ifndef _VECTOROP_H
-#define _VECTOROP_H
+#ifndef _BLUR_H
+#define _BLUR_H
 
 #include<stdio.h>
 #include<stdlib.h>
@@ -14,9 +14,15 @@
 
 #define OPERATION_I(X) (X)/1319+(X)*((X)-13)
 
-#define STREAM_NUMBERS 4 
+#define STREAM_NUMBERS 2
 
 #define RANDOM_NUMBER_MAX 1000
+
+#define IMAGE_SIZE_X 8192
+
+#define IMAGE_SIZE_Y 16384
+
+#define IMAGE_PAD_SIZE 2
 
 //Macro for checking cuda errors following a cuda launch or api call
 #define CUDA_CHECK_RETURN(value) {											\
